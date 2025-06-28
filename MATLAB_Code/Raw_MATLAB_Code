@@ -1,0 +1,83 @@
+clear all; close all;
+a = arduino('/dev/cu.usbserial-0001','Uno','Libraries',{'I2C'}); 
+sgp30obj = sgp30(a)
+
+figure  %live updating graph from line 4 to 24
+h = animatedline;
+ax = gca;
+ax.YGrid = 'on';
+ax.YLim = [0 1200];
+title('CO2 Level vs time (live)');
+ylabel('CO2 [ppm]');
+xlabel('Time [HH:MM:SS]');
+stop = false;
+startTime = datetime('now');
+while ~stop
+ % Read current CO2 value
+ CO2 = readEquivalentCarbondioxide(sgp30obj);
+ % Get current time
+ t = datetime('now') - startTime;
+ % Add points to animation
+ addpoints(h,datenum(t),double(CO2)) %CO2 here is uint16 data type, convert to double
+ % Update axes
+ ax.XLim = datenum([t-seconds(15) t]);
+ datetick('x','keeplimits')
+ drawnow
+ 
+ %CO2 monitoring system for plant health, line 27 to 35
+ disp([num2str(CO2)])
+ if (400 <= CO2 <= 800) %optimal CO2 levels for fern plant
+     disp('Ferry is happy :) ')
+ else
+     disp('Ferry is sad :( ');
+     %audio cue for abnormal CO2 levels, like an alarm
+     writePWMDutyCycle(a,'D5',0.33); pause(0.2); writeDigitalPin(a,'D5',0); pause(0.2);
+     writePWMDutyCycle(a,'D5',0.33); pause(0.2); writeDigitalPin(a,'D5',0); pause(0.2);
+ end
+
+ %manual watering system, line 38 to 50
+ Button = 'D6';
+ ButtonState = readDigitalPin(a, Button);
+ if (ButtonState == 1)
+     disp("Treat for ferry!");
+     writePWMDutyCycle(a,'D5',0.33); pause(0.4); writeDigitalPin(a,'D5',0); pause(0.2);
+     writeDigitalPin(a,"D4",1);
+     pause(0.1);
+     writeDigitalPin(a,"D4",0);
+     writeDigitalPin(a,"D4",1);
+     writeDigitalPin(a,"D2",1);
+     pause(0.2);
+     writeDigitalPin(a,"D2",0);
+ end
+
+ %soil moisture sensor, line 53 to 80
+ voltage = readVoltage(a,'A0');
+ disp("Signal recieved!")
+ if(voltage>3.2) %the greater the voltage, the less the moisture
+     %turn LED on
+     writeDigitalPin(a,"D4",1);
+     %buzzer on
+     writePWMDutyCycle(a,'D5',0.33); pause(0.2); writeDigitalPin(a,'D5',0); pause(0.2);
+     disp("ferry is thirsty, give water!");
+     %pump water
+     writeDigitalPin(a,"D2",1);
+     pause(0.5);
+     writeDigitalPin(a,"D2",0);
+     %buzzer off
+     writePWMDutyCycle(a,'D5',0.33); pause(0.2); writeDigitalPin(a,'D5',0); pause(0.2);
+     %LED off
+     writeDigitalPin(a,"D4",0);
+ elseif(voltage<3.2 && voltage>2.95)
+     %very common, so no buzzer this time
+     writeDigitalPin(a,"D4",1);
+     disp("ferry might be thirsty, have some water!")
+     writeDigitalPin(a,"D2",1);
+     pause(0.2);
+     writeDigitalPin(a,"D2",0);
+     writeDigitalPin(a,"D4",0);
+ else %ideal state, no visual/audio cues required
+     disp("ferry is well hydrated!")
+     writeDigitalPin(a,"D2",0);
+ end
+
+end
