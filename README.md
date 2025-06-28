@@ -25,13 +25,6 @@ Plant-Tamagotchi-System/
 
 ---
 
-## 📸 Demo  
-
-![System Setup](Images/system_setup.jpg)  
-![Live Graph](Images/live_graph_screenshot.png)
-
----
-
 ## 🔧 How to Run  
 
 ### Arduino:
