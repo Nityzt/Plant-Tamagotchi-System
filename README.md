@@ -17,7 +17,7 @@ This system uses:
 
 Plant-Tamagotchi-System/
 ├── Arduino_Code/ # OLED and plant control code
-├── MATLAB_Code/ # CO₂ monitoring and automation
+├── MATLAB_Code/ # Main Matlab monitoring code
 ├── Images/ # System and graph images
 ├── Documentation/ # Project report PDF
 └── README.md # This file
